@@ -1,11 +1,11 @@
 {
-  "last_run_utc": "2026-11-12T03:19:14Z",
+  "last_run_utc": "2026-11-14T07:26:31Z",
   "candidate_scenes_seen": 47,
   "source": "Sentinel-2 L2A via Earth Search (AWS public COGs)",
   "ndvi_method": "surface reflectance (L2A offset applied), SCL cloud/shadow/cirrus mask",
-  "scenes_in_history": 7,
-  "latest_scene_date": "2026-04-27",
-  "latest_scene_id": "S2C_43PGQ_20260427_0_L2A",
-  "latest_cloud_cover": 0.24841,
-  "latest_valid_fraction": 0.9856558103185062
+  "scenes_in_history": 15,
+  "latest_scene_date": "2026-11-13",
+  "latest_scene_id": "S2C_43PGQ_20261113_0_L2A",
+  "latest_cloud_cover": 22.45553,
+  "latest_valid_fraction": 0.7949147729341265
 }
