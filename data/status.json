@@ -1,6 +1,6 @@
 {
-  "last_run_utc": "2026-11-18T21:54:15Z",
-  "candidate_scenes_seen": 48,
+  "last_run_utc": "2026-11-19T10:50:53Z",
+  "candidate_scenes_seen": 5,
   "source": "Sentinel-2 L2A via Earth Search (AWS public COGs)",
   "ndvi_method": "surface reflectance (L2A offset applied), SCL cloud/shadow/cirrus mask",
   "scenes_in_history": 38,
