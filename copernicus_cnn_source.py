@@ -14,7 +14,7 @@ TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/
 PROCESS_URL = "https://sh.dataspace.copernicus.eu/process/v1"
 EVALSCRIPT = """//VERSION=3
 function setup() {
-  return {input:[{bands:["B04","B08","dataMask","SCL"],units:"REFLECTANCE"}],
+  return {input:[{bands:["B04","B08","dataMask","SCL"]}],
     output:{bands:4,sampleType:"FLOAT32"}};
 }
 function evaluatePixel(s) {
@@ -54,7 +54,7 @@ def fetch_red_nir(bbox, start, end, width=320, height=320, max_cloud=30):
         raise ValueError("Invalid image dimensions")
     payload = {
         "input":{"bounds":{"bbox":list(bbox),"properties":{"crs":"http://www.opengis.net/def/crs/OGC/1.3/CRS84"}},
-          "data":[{"type":"S2L2A",
+          "data":[{"type":"sentinel-2-l2a",
             "dataFilter":{"timeRange":{"from":start,"to":end},
               "maxCloudCoverage":max_cloud,"mosaickingOrder":"mostRecent"}}]},
         "output":{"width":width,"height":height,
