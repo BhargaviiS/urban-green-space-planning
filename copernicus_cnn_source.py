@@ -14,11 +14,11 @@ TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/
 PROCESS_URL = "https://sh.dataspace.copernicus.eu/process/v1"
 EVALSCRIPT = """//VERSION=3
 function setup() {
-  return {input:[{bands:["B04","B08","dataMask","SCL"]}],
-    output:{bands:4,sampleType:"FLOAT32"}};
+  return {input:[{bands:["B02","B03","B04","B08","dataMask","SCL"]}],
+    output:{bands:6,sampleType:"FLOAT32"}};
 }
 function evaluatePixel(s) {
-  return [s.B04,s.B08,s.dataMask,s.SCL];
+  return [s.B02,s.B03,s.B04,s.B08,s.dataMask,s.SCL];
 }
 """
 
@@ -78,13 +78,13 @@ def fetch_red_nir(bbox, start, end, width=320, height=320, max_cloud=30):
             bands = dataset.read().astype("float32")
             transform = dataset.transform
             crs = str(dataset.crs)
-    red,nir,mask,scl = bands
+    blue,green,red,nir,mask,scl = bands
     # SCL 3=shadow, 8/9/10=cloud, 11=snow; exclude unclassified 7 conservatively.
     valid = (mask > 0) & ~np.isin(scl.astype("int16"), [0,1,3,7,8,9,10,11])
     valid &= np.isfinite(red) & np.isfinite(nir) & ((red+nir)>0)
     ndvi = np.full(red.shape,np.nan,dtype="float32")
     ndvi[valid] = (nir[valid]-red[valid])/(nir[valid]+red[valid])
-    return {"red":red,"nir":nir,"valid":valid,"ndvi":ndvi,
+    return {"blue":blue,"green":green,"red":red,"nir":nir,"valid":valid,"ndvi":ndvi,
             "transform":transform,"crs":crs,
             "requested_window":{"start":start,"end":end},
             "note":"Response can mosaic scenes; record acquisition IDs separately for publication."}
