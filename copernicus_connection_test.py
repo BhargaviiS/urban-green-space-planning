@@ -17,7 +17,7 @@ import pandas as pd
 
 st.set_page_config(page_title="Copernicus Connection Test", page_icon="🛰️")
 st.title("🛰️ Copernicus Sentinel-2 Connection Test")
-st.caption("Research build: 2026-11-20 / CATALOG-V5")
+st.caption("Research build: 2026-11-20 / FIXED-WINDOW-V6")
 st.caption("Development-only test — does not alter the production dashboard.")
 st.info("This test uses a small Bengaluru area and reports NDVI. It does not validate CNN accuracy.")
 st.subheader("Optional recovered CNN inference")
@@ -35,11 +35,17 @@ else:
     except Exception as exc:
         st.error(f"Unable to confirm model upload: {type(exc).__name__}: {exc}")
         model_file = None
+acquisition_mode = st.radio("Satellite time-window mode", ["Fixed 29 October 2026 (research candidate)", "Rolling 60-day diagnostic"], horizontal=True)
+st.caption("Fixed window restricts the acquisition date; it does not prove which exact product was used by Process API.")
 st.write("**Region:** central Bengaluru (approx. 3 km wide)")
 st.write("**Satellite:** Sentinel-2 Level-2A, red B04 and near-infrared B08")
 if st.button("Test Copernicus API", type="primary"):
-    end = datetime.now(timezone.utc)
-    start = end - timedelta(days=60)
+    if acquisition_mode.startswith("Fixed"):
+        start = datetime(2026, 10, 29, 0, 0, tzinfo=timezone.utc)
+        end = datetime(2026, 10, 29, 23, 59, 59, tzinfo=timezone.utc)
+    else:
+        end = datetime.now(timezone.utc)
+        start = end - timedelta(days=60)
     with st.spinner("Requesting satellite data from Copernicus..."):
         try:
             scene = fetch_red_nir(
@@ -156,6 +162,9 @@ if st.button("Test Copernicus API", type="primary"):
                         "threshold": 0.5,
                         "preprocessing": "Per-scene 2nd/98th percentile scaling on valid pixels",
                         "acquisition_ids": None,
+                        "time_window_mode": acquisition_mode,
+                        "catalog_candidate_scene_id": "S2B_MSIL2A_20261029T050929_N0513_R019_T43PGQ_20261029T105708.SAFE" if acquisition_mode.startswith("Fixed") else None,
+                        "catalog_candidate_is_confirmed_process_source": False,
                         "warning": "Mosaicking possible; no independent reference labels.",
                     }
                     st.download_button("Download experiment metadata JSON",
