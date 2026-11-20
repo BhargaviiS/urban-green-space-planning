@@ -15,11 +15,24 @@ import pandas as pd
 
 st.set_page_config(page_title="Copernicus Connection Test", page_icon="🛰️")
 st.title("🛰️ Copernicus Sentinel-2 Connection Test")
-st.caption("Diagnostic build: 2026-11-20 / API-ERROR-V2")
+st.caption("Diagnostic build: 2026-11-20 / UPLOAD-STATUS-V3")
 st.caption("Development-only test — does not alter the production dashboard.")
 st.info("This test uses a small Bengaluru area and reports NDVI. It does not validate CNN accuracy.")
 st.subheader("Optional recovered CNN inference")
 model_file = st.file_uploader("Upload recovered green_space_cnn_model.keras (1.1 MB)", type=["keras"], help="Model stays in this Streamlit session; do not upload untrusted model archives.")
+if model_file is None:
+    st.warning("Model upload not confirmed in the current session. Satellite-only testing remains available.")
+else:
+    try:
+        uploaded_size = model_file.size
+        if uploaded_size < 100_000:
+            st.error(f"Uploaded file appears incomplete ({uploaded_size:,} bytes). Please retry after the app stabilizes.")
+            model_file = None
+        else:
+            st.success(f"Model upload received by server: {uploaded_size:,} bytes")
+    except Exception as exc:
+        st.error(f"Unable to confirm model upload: {type(exc).__name__}: {exc}")
+        model_file = None
 st.write("**Region:** central Bengaluru (approx. 3 km wide)")
 st.write("**Satellite:** Sentinel-2 Level-2A, red B04 and near-infrared B08")
 if st.button("Test Copernicus API", type="primary"):
