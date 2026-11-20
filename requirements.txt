@@ -4,3 +4,5 @@ folium
 streamlit-folium
 pydeck
 requests
+numpy
+rasterio
