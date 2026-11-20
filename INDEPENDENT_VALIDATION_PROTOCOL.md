@@ -18,3 +18,12 @@ The archived CNN 98.29% figure is agreement with NDVI-derived pseudo-labels, **n
 `reference_label` is independently annotated 0 or 1. Prediction probability lies in [0,1]. Keep training/test sample and geographic block IDs disjoint. Audit scene overlap and annotation provenance. Metadata alone cannot prove label independence.
 
 The local Version 9 research bundle includes a runnable evaluation harness, unit tests and this protocol. Real independently annotated labels are **not** included and have not been fabricated.
+## Patch-grid diagnostic evaluator (new)
+
+For the **100-patch diagnostic grid only**, `evaluate_independent_labels.py` accepts a prediction CSV with `patch_row,patch_col,cnn_probability,cnn_prediction_at_0_5` and an independently reviewed reference CSV with `patch_row,patch_col,reference_label,annotator,source_id`. Blank labels are excluded. Run:
+
+```bash
+python evaluate_independent_labels.py --predictions copernicus_cnn_predictions.csv --labels reference_labels.csv --out independent_evaluation
+```
+
+The script will refuse missing/duplicate coordinates and invalid probabilities; it does not create labels. Its metrics apply only to reviewed patches, **not** spatially independent accuracy unless sampling and acquisition independence have separately been established. For publication use the more comprehensive scene/spatial-block contract above and report spatial-block uncertainty. Do not label using the CNN outputs or NDVI threshold.
