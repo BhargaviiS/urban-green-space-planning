@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import streamlit as st
 
-from copernicus_cnn_source import fetch_red_nir, cnn_patches
+from copernicus_cnn_source import fetch_red_nir, cnn_patches, search_candidate_acquisitions
 import hashlib
 import io
 import zipfile
@@ -17,7 +17,7 @@ import pandas as pd
 
 st.set_page_config(page_title="Copernicus Connection Test", page_icon="🛰️")
 st.title("🛰️ Copernicus Sentinel-2 Connection Test")
-st.caption("Research build: 2026-11-20 / PROVENANCE-V4")
+st.caption("Research build: 2026-11-20 / CATALOG-V5")
 st.caption("Development-only test — does not alter the production dashboard.")
 st.info("This test uses a small Bengaluru area and reports NDVI. It does not validate CNN accuracy.")
 st.subheader("Optional recovered CNN inference")
@@ -50,6 +50,22 @@ if st.button("Test Copernicus API", type="primary"):
                 height=320,
                 max_cloud=40,
             )
+            st.subheader("Satellite acquisition candidates")
+            st.caption("Catalog results intersect the requested area/time; they do NOT identify which acquisitions the Process API mosaic actually used.")
+            try:
+                candidates = search_candidate_acquisitions(
+                    [77.578, 12.959, 77.606, 12.986],
+                    start.strftime("%Y-%m-%dT00:00:00Z"),
+                    end.strftime("%Y-%m-%dT23:59:59Z"), max_cloud=40)
+                if candidates:
+                    st.dataframe(pd.DataFrame(candidates), hide_index=True)
+                    st.download_button("Download candidate acquisition catalog CSV",
+                        pd.DataFrame(candidates).to_csv(index=False).encode(),
+                        "copernicus_candidate_acquisitions.csv", "text/csv")
+                else:
+                    st.warning("Catalog returned no candidate acquisitions for this query.")
+            except Exception as catalog_exc:
+                st.warning(f"Acquisition catalog lookup unavailable: {type(catalog_exc).__name__}: {catalog_exc}")
             valid = scene["valid"]
             st.success("API request succeeded and GeoTIFF bands were decoded.")
             st.metric("Valid pixels", f"{int(valid.sum()):,} / {valid.size:,}")
