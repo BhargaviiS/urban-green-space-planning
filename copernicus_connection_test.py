@@ -12,6 +12,7 @@ from copernicus_cnn_source import fetch_red_nir
 
 st.set_page_config(page_title="Copernicus Connection Test", page_icon="🛰️")
 st.title("🛰️ Copernicus Sentinel-2 Connection Test")
+st.caption("Diagnostic build: 2026-11-20 / API-ERROR-V2")
 st.caption("Development-only test — does not alter the production dashboard.")
 st.info("This test uses a small Bengaluru area and reports NDVI. It does not validate CNN accuracy.")
 st.write("**Region:** central Bengaluru (approx. 3 km wide)")
