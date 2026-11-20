@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import streamlit as st
 
-from copernicus_cnn_source import fetch_red_nir
+from copernicus_cnn_source import fetch_red_nir, cnn_patches
 
 st.set_page_config(page_title="Copernicus Connection Test", page_icon="🛰️")
 st.title("🛰️ Copernicus Sentinel-2 Connection Test")
@@ -38,6 +38,9 @@ if st.button("Test Copernicus API", type="primary"):
                 st.image(np.nan_to_num(scene["ndvi"], nan=0.0), caption="NDVI raster (nodata displayed as 0)", clamp=True)
             else:
                 st.warning("Response succeeded but no clear pixels passed quality masking.")
+            patches, locations = cnn_patches(scene)
+            st.metric("CNN-compatible 32×32 patches", len(patches))
+            st.caption("Patch preprocessing checked; CNN inference not yet executed.")
             st.caption("The selected time window may mosaic acquisitions. This is a connectivity check, not a publication-ready scene record.")
         except Exception as exc:
             st.error(f"Satellite request failed: {type(exc).__name__}: {exc}")
