@@ -10,6 +10,8 @@ import streamlit as st
 
 from copernicus_cnn_source import fetch_red_nir, cnn_patches
 import hashlib
+import io
+import zipfile
 import json
 import pandas as pd
 
@@ -58,6 +60,39 @@ if st.button("Test Copernicus API", type="primary"):
                 st.warning("Response succeeded but no clear pixels passed quality masking.")
             patches, locations = cnn_patches(scene)
             st.metric("CNN-compatible 32×32 patches", len(patches))
+            # Export RGB thumbnails without CNN probabilities or NDVI for blind review.
+            if locations:
+                from PIL import Image
+                rgb = np.stack([scene["red"], scene["green"], scene["blue"]], axis=-1)
+                valid_rgb = rgb[valid]
+                lo = np.percentile(valid_rgb, 2, axis=0)
+                hi = np.percentile(valid_rgb, 98, axis=0)
+                display_rgb = np.uint8(255 * np.clip((rgb - lo) / np.maximum(hi-lo, 1e-6), 0, 1))
+                display_rgb[~valid] = 0
+                st.image(display_rgb, caption="Sentinel-2 RGB preview (contrast stretched; not ground truth)")
+                review_rows = []
+                archive_bytes = io.BytesIO()
+                with zipfile.ZipFile(archive_bytes, "w", zipfile.ZIP_DEFLATED) as archive:
+                    for row, col in locations:
+                        patch_id = f"r{row:03d}_c{col:03d}"
+                        tile = display_rgb[row:row+32, col:col+32]
+                        png = io.BytesIO()
+                        Image.fromarray(tile).resize((256,256), Image.Resampling.NEAREST).save(png, format="PNG")
+                        archive.writestr(f"rgb_patches/{patch_id}.png", png.getvalue())
+                        review_rows.append({"patch_row":row, "patch_col":col,
+                            "reference_label":"", "annotator":"", "source_id":"",
+                            "patch_id":patch_id})
+                    review_csv = pd.DataFrame(review_rows).to_csv(index=False)
+                    archive.writestr("reference_labels_BLANK.csv", review_csv)
+                    archive.writestr("README.txt",
+                        "Blind RGB review images; CNN probabilities and NDVI are intentionally omitted.\\n"
+                        "Assign labels only after independent visual inspection and a fixed vegetation definition.\\n"
+                        "Source is Sentinel-2 Process API mosaicking across a rolling 60-day window.\\n"
+                        "This diagnostic scene is not a spatially independent publication test set.\\n"
+                        "source_id must identify imagery and date; acquire exact scene IDs for formal validation.\\n")
+                st.download_button("Download blind RGB patch review bundle (ZIP)",
+                    archive_bytes.getvalue(), "copernicus_blind_rgb_review.zip", "application/zip")
+
             st.caption("Patch extraction verified; CNN inference requires the recovered model.")
             if model_file is not None and len(patches):
                 try:
