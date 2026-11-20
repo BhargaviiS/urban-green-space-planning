@@ -50,13 +50,15 @@ if st.button("Test Copernicus API", type="primary"):
                 try:
                     import tempfile
                     from pathlib import Path
-                    import tensorflow as tf
+                    import os
+                    os.environ.setdefault("KERAS_BACKEND", "numpy")
+                    import keras
                     raw = model_file.getvalue()
                     model_sha256 = hashlib.sha256(raw).hexdigest()
                     with tempfile.TemporaryDirectory() as folder:
                         path = Path(folder) / "green_space_cnn_model.keras"
                         path.write_bytes(raw)
-                        model = tf.keras.models.load_model(str(path), compile=False, safe_mode=True)
+                        model = keras.models.load_model(str(path), compile=False, safe_mode=True)
                         if tuple(model.input_shape[1:]) != (32,32,2):
                             raise ValueError(f"Unexpected model input shape: {model.input_shape}")
                         probabilities = model.predict(patches, verbose=0).reshape(-1)
@@ -73,7 +75,7 @@ if st.button("Test Copernicus API", type="primary"):
                     st.dataframe(output, hide_index=True)
                     st.download_button("Download CNN predictions CSV", output.to_csv(index=False).encode(), "copernicus_cnn_predictions.csv", "text/csv")
                 except ImportError as exc:
-                    st.error("TensorFlow unavailable in deployment: " + str(exc) + ". Use a TensorFlow-compatible Python version (3.12 recommended) and install tensorflow-cpu.")
+                    st.error("Keras inference dependency unavailable: " + str(exc))
                 except Exception as exc:
                     st.error(f"CNN inference failed: {type(exc).__name__}: {exc}")
 
