@@ -53,8 +53,8 @@ def fetch_red_nir(bbox, start, end, width=320, height=320, max_cloud=30):
     if not (1 <= width <= 2500 and 1 <= height <= 2500):
         raise ValueError("Invalid image dimensions")
     payload = {
-        "input":{"bounds":{"bbox":list(bbox),"properties":{"crs":"http://www.opengis.net/def/crs/EPSG/0/4326"}},
-          "data":[{"type":"sentinel-2-l2a",
+        "input":{"bounds":{"bbox":list(bbox),"properties":{"crs":"http://www.opengis.net/def/crs/OGC/1.3/CRS84"}},
+          "data":[{"type":"S2L2A",
             "dataFilter":{"timeRange":{"from":start,"to":end},
               "maxCloudCoverage":max_cloud,"mosaickingOrder":"mostRecent"}}]},
         "output":{"width":width,"height":height,
@@ -64,7 +64,13 @@ def fetch_red_nir(bbox, start, end, width=320, height=320, max_cloud=30):
     response = requests.post(PROCESS_URL,json=payload,
         headers={"Authorization":f"Bearer {access_token()}","Accept":"image/tiff"},
         timeout=120)
-    response.raise_for_status()
+    if not response.ok:
+        try:
+            detail = response.json()
+            message = str(detail.get("error", detail.get("message", detail)))
+        except ValueError:
+            message = response.text[:600]
+        raise RuntimeError(f"Copernicus Process API HTTP {response.status_code}: {message[:600]}")
     import rasterio
     from rasterio.io import MemoryFile
     with MemoryFile(response.content) as mem:
