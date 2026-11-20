@@ -10,12 +10,12 @@ import streamlit as st
 
 from copernicus_cnn_source import fetch_red_nir, cnn_patches
 import hashlib
-import io
+import json
 import pandas as pd
 
 st.set_page_config(page_title="Copernicus Connection Test", page_icon="🛰️")
 st.title("🛰️ Copernicus Sentinel-2 Connection Test")
-st.caption("Diagnostic build: 2026-11-20 / UPLOAD-STATUS-V3")
+st.caption("Research build: 2026-11-20 / PROVENANCE-V4")
 st.caption("Development-only test — does not alter the production dashboard.")
 st.info("This test uses a small Bengaluru area and reports NDVI. It does not validate CNN accuracy.")
 st.subheader("Optional recovered CNN inference")
@@ -85,6 +85,31 @@ if st.button("Test Copernicus API", type="primary"):
                     st.metric("Predicted positive patches (threshold 0.5)", int((probabilities >= .5).sum()))
                     st.caption("Positive means the model's NDVI-derived training class, not independently verified green space.")
                     st.caption("Model SHA-256: " + model_sha256)
+                    output["patch_mean_ndvi"] = [
+                        float(np.nanmean(scene["ndvi"][row:row+32, col:col+32]))
+                        for row, col in locations
+                    ]
+                    output["model_sha256"] = model_sha256
+                    output["requested_start_utc"] = scene["requested_window"]["start"]
+                    output["requested_end_utc"] = scene["requested_window"]["end"]
+                    st.caption("NDVI is a descriptive baseline, not independent ground truth.")
+                    metadata = {
+                        "model_sha256": model_sha256,
+                        "source": "Copernicus Sentinel-2 Level-2A Process API",
+                        "bbox_wgs84": [77.578, 12.959, 77.606, 12.986],
+                        "request_window_utc": scene["requested_window"],
+                        "image_size": [320, 320],
+                        "patch_size": 32,
+                        "patch_count": len(patches),
+                        "channels": ["B04", "B08"],
+                        "threshold": 0.5,
+                        "preprocessing": "Per-scene 2nd/98th percentile scaling on valid pixels",
+                        "acquisition_ids": None,
+                        "warning": "Mosaicking possible; no independent reference labels.",
+                    }
+                    st.download_button("Download experiment metadata JSON",
+                        json.dumps(metadata, indent=2).encode("utf-8"),
+                        "copernicus_cnn_experiment_metadata.json", "application/json")
                     st.dataframe(output, hide_index=True)
                     st.download_button("Download CNN predictions CSV", output.to_csv(index=False).encode(), "copernicus_cnn_predictions.csv", "text/csv")
                 except ImportError as exc:
