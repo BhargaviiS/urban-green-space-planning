@@ -12,6 +12,7 @@ import requests
 
 TOKEN_URL = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
 PROCESS_URL = "https://sh.dataspace.copernicus.eu/process/v1"
+CATALOG_URL = "https://sh.dataspace.copernicus.eu/catalog/v1/search"
 EVALSCRIPT = """//VERSION=3
 function setup() {
   return {input:[{bands:["B02","B03","B04","B08","dataMask","SCL"]}],
@@ -115,3 +116,25 @@ def cnn_patches(scene, patch_size=32, min_valid_fraction=.95):
     if not patches:
         return np.empty((0,patch_size,patch_size,2),dtype="float32"),locations
     return np.stack(patches),locations
+
+
+def search_candidate_acquisitions(bbox, start, end, max_cloud=40, limit=30):
+    """Catalog scenes intersecting the request, NOT proof of Process API scene selection."""
+    payload = {
+        "bbox": list(bbox),
+        "datetime": f"{start}/{end}",
+        "collections": ["sentinel-2-l2a"],
+        "limit": limit,
+        "filter": {"op": "<=", "args": [{"property": "eo:cloud_cover"}, max_cloud]},
+        "filter-lang": "cql2-json",
+    }
+    response = requests.post(CATALOG_URL, json=payload,
+        headers={"Authorization": f"Bearer {access_token()}", "Content-Type": "application/json"},
+        timeout=60)
+    response.raise_for_status()
+    return [{
+        "scene_id": feature.get("id"),
+        "datetime": feature.get("properties", {}).get("datetime"),
+        "cloud_cover_percent": feature.get("properties", {}).get("eo:cloud_cover"),
+        "collection": feature.get("collection"),
+    } for feature in response.json().get("features", [])]
